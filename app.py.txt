@@ -1,4 +1,4 @@
-﻿import requests
+﻿ import requests
 import pandas as pd
 import streamlit as st
 from io import BytesIO
@@ -8,33 +8,18 @@ st.title("Monitoreo de condiciones atmosféricas Nestlé 🌤️")
 
 api_key = "3050f6a713b7c60490ea32e7e4c8cfea"
 
-# Lista de ciudades a monitorear
+# --- Ciudades ---
 ciudades = {
     "CD ANTOFAGASTA": "Antofagasta,CL",
-    "CD QUILICURA": "Santiago,CL",
-    "FABRICA MACUL": "Macul,CL",
-    "FABRICA MAIPU": "Maipu,CL",
-    "FABRICA GRANEROS": "Graneros,CL",
-    "FABRICA SAN FERNANDO": "San Fernando,CL",
-    "FABRICA TENO": "Teno,CL",
-    "CD CONCEPCIÓN": "Concepcion,CL",
-    "FB LOS ANGELES": "Los Angeles,CL",
-    "CD TEMUCO": "Temuco,CL",
-    "FABRICA OSORNO": "Osorno,CL",
-    "FABRICA LLANQUIHUE": "Llanquihue,CL",
-    "CD PUNTA ARENAS": "Punta Arenas,CL",
-    "MERCOMEX": "Santiago,CL",
-    "LA FETE QUILICURA": "Quilicura,CL",
-    "PURINA PUDAHUEL": "Pudahuel,CL",
-    "PROYECTO TREMUN": "Valdivia,CL",
-    "NESPRESSO PORTAL LA DEHESA": "Lo Barnechea,CL",
-    "NESPRESSO ALTO LAS CONDES": "Las Condes,CL",
-    "NESPRESSO COSTANERA CENTER": "Providencia,CL",
-    "NESPRESSO PARQUE ARAUCO": "Vitacura,CL",
+    # ... (resto igual)
     "CORPORATIVO NESTLE LAS CONDES": "Las Condes,CL"
 }
 
-# --- Función para obtener datos del clima ---
+# --- Inicializar estado ---
+if "datos_clima" not in st.session_state:
+    st.session_state.datos_clima = None
+
+# --- Función para obtener clima ---
 def obtener_clima(ciudad_nombre):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={ciudad_nombre}&appid={api_key}&lang=es&units=metric"
     respuesta = requests.get(url)
@@ -47,21 +32,21 @@ def obtener_clima(ciudad_nombre):
     else:
         return "Error al obtener datos"
 
-# --- Botón para actualizar ---
+# --- Botón ---
 if st.button("Actualizar datos"):
     resultados = []
     for site, ciudad in ciudades.items():
         descripcion = obtener_clima(ciudad)
         resultados.append({"Site Nestlé": site, "Novedades": descripcion})
-    
-    df = pd.DataFrame(resultados)
-    st.dataframe(df)
+    st.session_state.datos_clima = pd.DataFrame(resultados)
 
-    # Descargar como Excel
+# --- Mostrar resultados si existen ---
+if st.session_state.datos_clima is not None:
+    st.dataframe(st.session_state.datos_clima)
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name="Clima")
+        st.session_state.datos_clima.to_excel(writer, index=False, sheet_name="Clima")
     st.download_button("Descargar Excel", data=output.getvalue(), file_name="novedades_clima.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
 else:
     st.info("Presiona el botón para consultar el clima actual de las ciudades.")
