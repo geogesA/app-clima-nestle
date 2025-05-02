@@ -1,0 +1,41 @@
+import requests
+import pandas as pd
+import streamlit as st
+from io import BytesIO
+
+# --- Configuración inicial ---
+st.title("Monitoreo de condiciones atmosféricas Nestlé 🌤️")
+
+api_key = "3050f6a713b7c60490ea32e7e4c8cfea"
+
+# --- Ciudades ---
+ciudades = {
+    "CD ANTOFAGASTA": "Antofagasta,CL",
+    # ... (resto igual)
+    "CORPORATIVO NESTLE LAS CONDES": "Las Condes,CL"
+}
+
+# --- Inicializar estado ---
+if "datos_clima" not in st.session_state:
+    st.session_state.datos_clima = None
+
+# --- Función para obtener clima ---
+def obtener_clima(ciudad_nombre):
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={ciudad_nombre}&appid={api_key}&lang=es&units=metric"
+    respuesta = requests.get(url)
+    if respuesta.status_code == 200:
+        datos = respuesta.json()
+        clima = datos["weather"][0]["description"]
+        viento = datos["wind"]["speed"]
+        temp = datos["main"]["temp"]
+        return f"{clima.capitalize()}, vientos de hasta {viento:.0f} km/h - temperatura de {temp:.0f}° grados"
+    else:
+        return "Error al obtener datos"
+
+# --- Botón ---
+if st.button("Actualizar datos"):
+    resultados = []
+    for site, ciudad in ciudades.items():
+        descripcion = obtener_clima(ciudad)
+        resultados.append({"Site Nestlé": site, "Novedades": descripcion})
+    st.session_state.datos_clima = pd.DataFrame(resultados)
