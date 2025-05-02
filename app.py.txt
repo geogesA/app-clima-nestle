@@ -1,0 +1,67 @@
+﻿import requests
+import pandas as pd
+import streamlit as st
+from io import BytesIO
+
+# --- Configuración inicial ---
+st.title("Monitoreo de condiciones atmosféricas Nestlé 🌤️")
+
+api_key = "3050f6a713b7c60490ea32e7e4c8cfea"
+
+# Lista de ciudades a monitorear
+ciudades = {
+    "CD ANTOFAGASTA": "Antofagasta,CL",
+    "CD QUILICURA": "Santiago,CL",
+    "FABRICA MACUL": "Macul,CL",
+    "FABRICA MAIPU": "Maipu,CL",
+    "FABRICA GRANEROS": "Graneros,CL",
+    "FABRICA SAN FERNANDO": "San Fernando,CL",
+    "FABRICA TENO": "Teno,CL",
+    "CD CONCEPCIÓN": "Concepcion,CL",
+    "FB LOS ANGELES": "Los Angeles,CL",
+    "CD TEMUCO": "Temuco,CL",
+    "FABRICA OSORNO": "Osorno,CL",
+    "FABRICA LLANQUIHUE": "Llanquihue,CL",
+    "CD PUNTA ARENAS": "Punta Arenas,CL",
+    "MERCOMEX": "Santiago,CL",
+    "LA FETE QUILICURA": "Quilicura,CL",
+    "PURINA PUDAHUEL": "Pudahuel,CL",
+    "PROYECTO TREMUN": "Valdivia,CL",
+    "NESPRESSO PORTAL LA DEHESA": "Lo Barnechea,CL",
+    "NESPRESSO ALTO LAS CONDES": "Las Condes,CL",
+    "NESPRESSO COSTANERA CENTER": "Providencia,CL",
+    "NESPRESSO PARQUE ARAUCO": "Vitacura,CL",
+    "CORPORATIVO NESTLE LAS CONDES": "Las Condes,CL"
+}
+
+# --- Función para obtener datos del clima ---
+def obtener_clima(ciudad_nombre):
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={ciudad_nombre}&appid={api_key}&lang=es&units=metric"
+    respuesta = requests.get(url)
+    if respuesta.status_code == 200:
+        datos = respuesta.json()
+        clima = datos["weather"][0]["description"]
+        viento = datos["wind"]["speed"]
+        temp = datos["main"]["temp"]
+        return f"{clima.capitalize()}, vientos de hasta {viento:.0f} km/h - temperatura de {temp:.0f}° grados"
+    else:
+        return "Error al obtener datos"
+
+# --- Botón para actualizar ---
+if st.button("Actualizar datos"):
+    resultados = []
+    for site, ciudad in ciudades.items():
+        descripcion = obtener_clima(ciudad)
+        resultados.append({"Site Nestlé": site, "Novedades": descripcion})
+    
+    df = pd.DataFrame(resultados)
+    st.dataframe(df)
+
+    # Descargar como Excel
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Clima")
+    st.download_button("Descargar Excel", data=output.getvalue(), file_name="novedades_clima.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+else:
+    st.info("Presiona el botón para consultar el clima actual de las ciudades.")
